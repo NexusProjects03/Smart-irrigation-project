@@ -1,0 +1,8 @@
+.venv/
+backend/Lib/
+backend/Scripts/
+__pycache__/
+*.txt
+*.pkl
+!backend/requirements.txt
+.env

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Agriculture Dashboard</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,weight@9..40,500;700&family=Inter:wght@400;500;600&family=Poppins:wght@400;500;600&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Background Animation Layer -->
+    <div class="bg-animation">
+        <div class="sun-moon"></div>
+        <div class="cloud cloud-1"></div>
+        <div class="cloud cloud-2"></div>
+        <div class="cloud cloud-3"></div>
+        <div class="stars"></div>
+
+        <!-- Grass at bottom -->
+        <div class="grass-layer">
+            <div class="grass-blade" style="left: 5%"></div>
+            <div class="grass-blade" style="left: 10%"></div>
+            <div class="grass-blade" style="left: 15%"></div>
+            <div class="grass-blade" style="left: 20%"></div>
+            <div class="grass-blade" style="left: 25%"></div>
+            <div class="grass-blade" style="left: 30%"></div>
+            <div class="grass-blade" style="left: 35%"></div>
+            <div class="grass-blade" style="left: 40%"></div>
+            <div class="grass-blade" style="left: 45%"></div>
+            <div class="grass-blade" style="left: 50%"></div>
+            <div class="grass-blade" style="left: 55%"></div>
+            <div class="grass-blade" style="left: 60%"></div>
+            <div class="grass-blade" style="left: 65%"></div>
+            <div class="grass-blade" style="left: 70%"></div>
+            <div class="grass-blade" style="left: 75%"></div>
+            <div class="grass-blade" style="left: 80%"></div>
+            <div class="grass-blade" style="left: 85%"></div>
+            <div class="grass-blade" style="left: 90%"></div>
+            <div class="grass-blade" style="left: 95%"></div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header>
+        <div class="header-left">
+            <h1>🌱 Smart Agriculture Dashboard</h1>
+            <span class="subtitle">Real-time Soil Intelligence</span>
+        </div>
+
+        <div class="header-right">
+            <div id="connectionStatus" class="status-badge disconnected">
+                <span class="status-dot"></span> <span class="status-text">Disconnected</span>
+            </div>
+
+            <div id="rainStatus" class="status-badge rain-no">
+                <span class="rain-icon">☁️</span> <span class="rain-text">Rain: NO</span>
+            </div>
+
+            <div id="motorStatusContainer" class="motor-status-container">
+                <div id="motorStatus" class="status-badge motor-offline">
+                    <span class="motor-icon">⚙️</span> <span class="motor-text">Motor: OFF</span>
+                    <span class="motor-caution" title="No water in tank">⚠️</span>
+                </div>
+                <div id="motorTooltip" class="motor-tooltip">
+                    <div class="tooltip-header">No crop selected</div>
+                    <div class="tooltip-row dim"><span>Select a crop for smart motor control</span></div>
+                </div>
+            </div>
+
+            <!-- Mode Switch -->
+            <div class="mode-switch-container">
+                <span id="modeLabel" class="mode-label">USB Mode</span>
+                <label class="switch">
+                    <input type="checkbox" id="modeToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <button id="themeToggle" class="theme-toggle" aria-label="Toggle Dark Mode">
+                <span class="toggle-icon">🌞</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- Sensor Grid -->
+        <section class="sensor-grid">
+            <!-- Temperature -->
+            <div class="card sensor-card" id="card-temp">
+                <div class="card-header">
+                    <span class="sensor-icon">🌡️</span>
+                    <span class="sensor-name">Temperature</span>
+                </div>
+                <div class="card-value">
+                    <span id="temp">--</span>
+                    <span class="unit">°C</span>
+                </div>
+                <div class="micro-status">Optimal: 20-30°C</div>
+            </div>
+
+            <!-- Moisture -->
+            <div class="card sensor-card" id="card-moisture">
+                <div class="card-header">
+                    <span class="sensor-icon">💧</span>
+                    <span class="sensor-name">Soil Moisture</span>
+                </div>
+                <div class="card-value">
+                    <span id="moisture">--</span>
+                    <span class="unit">%</span>
+                </div>
+                <div class="micro-status">Water Requirement</div>
+            </div>
+
+            <!-- pH -->
+            <div class="card sensor-card" id="card-ph">
+                <div class="card-header">
+                    <span class="sensor-icon">⚗️</span>
+                    <span class="sensor-name">pH Level</span>
+                </div>
+                <div class="card-value">
+                    <span id="ph">--</span>
+                    <span class="unit">pH</span>
+                </div>
+                <div class="micro-status">Acidity / Alkalinity</div>
+            </div>
+
+            <!-- Nitrogen -->
+            <div class="card sensor-card" id="card-n">
+                <div class="card-header">
+                    <span class="sensor-icon">🧪</span>
+                    <span class="sensor-name">Nitrogen (N)</span>
+                </div>
+                <div class="card-value">
+                    <span id="n">--</span>
+                    <span class="unit">mg/kg</span>
+                </div>
+                <div class="micro-status">Leaf Growth</div>
+            </div>
+
+            <!-- Phosphorus -->
+            <div class="card sensor-card" id="card-p">
+                <div class="card-header">
+                    <span class="sensor-icon">🧪</span>
+                    <span class="sensor-name">Phosphorus (P)</span>
+                </div>
+                <div class="card-value">
+                    <span id="p">--</span>
+                    <span class="unit">mg/kg</span>
+                </div>
+                <div class="micro-status">Root Development</div>
+            </div>
+
+            <!-- Potassium -->
+            <div class="card sensor-card" id="card-k">
+                <div class="card-header">
+                    <span class="sensor-icon">🧪</span>
+                    <span class="sensor-name">Potassium (K)</span>
+                </div>
+                <div class="card-value">
+                    <span id="k">--</span>
+                    <span class="unit">mg/kg</span>
+                </div>
+                <div class="micro-status">Overall Health</div>
+            </div>
+        </section>
+
+        <!-- Weather Forecast Panel -->
+        <section class="weather-panel">
+            <div class="weather-panel-header">
+                <span class="weather-panel-icon">🌤️</span>
+                <div>
+                    <h3>Weather Forecast</h3>
+                    <span class="weather-location">📍 Visakhapatnam</span>
+                </div>
+            </div>
+            <div id="weatherInfo" class="weather-info">
+                <div class="weather-row dim"><span>Loading weather data...</span></div>
+            </div>
+        </section>
+
+        <!-- Lower Section: Control & Prediction -->
+        <section class="dashboard-lower">
+
+            <!-- Control Panel (Custom Crops) -->
+            <div class="panel control-panel">
+                <div class="panel-header-modern">
+                    <div class="icon-box-glow">✨</div>
+                    <div>
+                        <h2>AI Crop Expert</h2>
+                        <p class="panel-subtitle">Get instant suitability analysis</p>
+                    </div>
+                </div>
+
+                <div class="ai-search-box">
+                    <input id="cname" placeholder="Type crop name (e.g. Wheat)..." class="glass-input">
+                    <button class="btn-glow-action" onclick="addCropAI()">
+                        Analyze
+                    </button>
+                </div>
+
+                <div class="crop-list-container">
+                    <div class="list-header">
+                        <h3>Your Crops</h3>
+                        <div class="list-divider"></div>
+                    </div>
+                    <ul id="cropList"></ul>
+                    <button id="loadMoreBtn" class="load-more-btn" onclick="loadMoreCrops()" style="display: none;">
+                        Show More Crops
+                    </button>
+                </div>
+            </div>
+
+            <!-- Prediction Center -->
+            <div class="panel prediction-panel">
+                <div class="prediction-header">
+                    <h2>🤖 Soil Health Checkup</h2>
+                    <p>AI-powered recommendation based on current sensor readings.</p>
+                </div>
+
+                <div class="prediction-content">
+                    <button class="predict-btn" onclick="predict()">
+                        🌱 Check Suitable Crops
+                    </button>
+
+                    <div id="predictionResult" class="result-box hidden">
+                        <!-- Result injected here via JS -->
+                    </div>
+                </div>
+
+                <div class="prediction-visuals">
+                    <!-- Illustration or Decorative element -->
+                    <div class="plant-growth-icon">🌱</div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Crop Details Modal -->
+    <div id="cropModal" class="modal hidden">
+        <div class="modal-overlay" onclick="closeCropModal()"></div>
+        <div class="modal-content wide-modal">
+            <button class="modal-close" onclick="closeCropModal()">✕</button>
+            <div class="modal-header">
+                <span class="modal-icon">🌾</span>
+                <h2 id="modalCropName">Crop Name</h2>
+            </div>
+
+            <div class="modal-body-grid">
+                <!-- Left: Values -->
+                <div class="modal-left">
+                    <h4 class="section-title">Ideal Conditions</h4>
+                    <div class="range-grid">
+                        <div class="range-card">
+                            <div class="range-label">Nitrogen (N)</div>
+                            <div class="range-value" id="modalN">-- - -- mg/kg</div>
+                        </div>
+                        <div class="range-card">
+                            <div class="range-label">Phosphorus (P)</div>
+                            <div class="range-value" id="modalP">-- - -- mg/kg</div>
+                        </div>
+                        <div class="range-card">
+                            <div class="range-label">Potassium (K)</div>
+                            <div class="range-value" id="modalK">-- - -- mg/kg</div>
+                        </div>
+                        <div class="range-card">
+                            <div class="range-label">pH Level</div>
+                            <div class="range-value" id="modalPH">-- - --</div>
+                        </div>
+                        <div class="range-card">
+                            <div class="range-label">Temperature</div>
+                            <div class="range-value" id="modalTemp">-- - -- °C</div>
+                        </div>
+                        <div class="range-card">
+                            <div class="range-label">Moisture</div>
+                            <div class="range-value" id="modalMoist">-- - -- %</div>
+                        </div>
+                    </div>
+
+                    <button class="btn-compat-check" onclick="runCompatibilityCheck()">
+                        � Check Compatibility Results 👉
+                    </button>
+                </div>
+
+                <!-- Right: Analysis & Results -->
+                <div class="modal-right">
+                    <h4 class="section-title">Analysis & Insights</h4>
+                    <div class="modal-analysis" id="modalAnalysis">
+                        <p id="modalAnalysisText">No analysis available.</p>
+                    </div>
+
+                    <div id="compatResult" class="compat-result hidden">
+                        <!-- Result injected here via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-danger" onclick="deleteSelectedCrop()">🗑️ Delete Crop</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Crops Tile view Modal -->
+    <div id="allCropsModal" class="modal hidden">
+        <div class="modal-overlay" onclick="closeAllCropsModal()"></div>
+        <div class="modal-content wide-modal">
+            <button class="modal-close" onclick="closeAllCropsModal()">✕</button>
+            <div class="modal-header">
+                <span class="modal-icon">📋</span>
+                <h2>All Available Crops</h2>
+            </div>
+            <div class="modal-body">
+                <div id="allCropsGrid" class="crops-tile-grid">
+                    <!-- Tiles injected via JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Suggested Crops Modal -->
+    <div id="predictionModal" class="modal hidden">
+        <div class="modal-overlay" onclick="closePredictionModal()"></div>
+        <div class="modal-content wide-modal">
+            <button class="modal-close" onclick="closePredictionModal()">✕</button>
+            <div class="modal-header">
+                <span class="modal-icon">🌱</span>
+                <h2>Top Suitable Crops</h2>
+            </div>
+            <div class="modal-body">
+                <div id="predictionGrid" class="crops-tile-grid">
+                    <!-- Tiles injected via JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
