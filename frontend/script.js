@@ -788,7 +788,15 @@ function openPredictionModal() {
   modal.classList.remove("hidden");
   grid.innerHTML = "";
 
-  lastPredictionResults.forEach((item) => {
+  // Sort: Favorites first (pinned), then rest by confidence descending
+  const sortedResults = [...lastPredictionResults].sort((a, b) => {
+    const aFav = a.type === "Favorite" ? 1 : 0;
+    const bFav = b.type === "Favorite" ? 1 : 0;
+    if (aFav !== bFav) return bFav - aFav; // Favorites first
+    return (b.confidence || 0) - (a.confidence || 0); // Then by confidence
+  });
+
+  sortedResults.forEach((item) => {
     let confColor = 'var(--status-danger)';
     if (item.confidence > 80) confColor = 'var(--status-good)';
     else if (item.confidence > 40) confColor = 'var(--status-warning)';

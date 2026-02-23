@@ -28,7 +28,8 @@
         "temp_max": 22.0,
         "moist_min": 60.0,
         "moist_max": 80.0,
-        "analysis": "Cauliflower thrives in well-drained, loamy soil with a pH between 6.0 and 7.0. It requires adequate nitrogen for head development, phosphorus for root growth, and potassium for overall plant health and disease resistance.  Optimal temperatures range from 5\u00b0C to 22\u00b0C. Consistent moisture is crucial, particularly during head formation.  Avoid soils that are too sandy or clayey, as they can impede root growth and water penetration. Amend soil with organic matter like compost to improve fertility and drainage.  Early planting is crucial to avoid frost damage. Consider foliar feeding with calcium to prevent tip burn."
+        "analysis": "Cauliflower thrives in well-drained, loamy soil with a pH between 6.0 and 7.0. It requires adequate nitrogen for head development, phosphorus for root growth, and potassium for overall plant health and disease resistance.  Optimal temperatures range from 5\u00b0C to 22\u00b0C. Consistent moisture is crucial, particularly during head formation.  Avoid soils that are too sandy or clayey, as they can impede root growth and water penetration. Amend soil with organic matter like compost to improve fertility and drainage.  Early planting is crucial to avoid frost damage. Consider foliar feeding with calcium to prevent tip burn.",
+        "favorite": false
     },
     {
         "name": "wheat",
@@ -44,7 +45,8 @@
         "temp_max": 30.0,
         "moist_min": 50.0,
         "moist_max": 80.0,
-        "analysis": "Wheat thrives in well-drained loamy soils with a pH between 6.0 and 7.5. Optimal temperature ranges from 4\u00b0C to 30\u00b0C during the growing season. Adequate moisture is crucial, with ideal soil moisture levels between 50% and 80% of the field capacity. Regular fertilization with nitrogen, phosphorus, and potassium is essential for healthy growth and high yields.  Consider timing fertilization based on soil test results and crop needs.  Adequate drainage prevents root rot.  Wheat is sensitive to frost damage, so early planting and protection from late frosts are important. Ensure appropriate irrigation during dry periods. Variety selection is critical, considering local climate and disease resistance. Consider crop rotation to improve soil health and reduce pest/disease pressure."
+        "analysis": "Wheat thrives in well-drained loamy soils with a pH between 6.0 and 7.5. Optimal temperature ranges from 4\u00b0C to 30\u00b0C during the growing season. Adequate moisture is crucial, with ideal soil moisture levels between 50% and 80% of the field capacity. Regular fertilization with nitrogen, phosphorus, and potassium is essential for healthy growth and high yields.  Consider timing fertilization based on soil test results and crop needs.  Adequate drainage prevents root rot.  Wheat is sensitive to frost damage, so early planting and protection from late frosts are important. Ensure appropriate irrigation during dry periods. Variety selection is critical, considering local climate and disease resistance. Consider crop rotation to improve soil health and reduce pest/disease pressure.",
+        "favorite": true
     },
     {
         "name": "cherry",
@@ -78,5 +80,22 @@
         "moist_max": 90.0,
         "analysis": "Sugarcane thrives in well-drained, fertile soils with a pH between 6.0 and 7.5. It requires a significant amount of nitrogen (120-250 kg/ha), phosphorus (30-80 kg/ha), and potassium (150-300 kg/ha).  Optimal temperatures range from 18\u00b0C to 35\u00b0C, and it requires high soil moisture, ideally maintaining 60-90% field capacity.  Sugarcane is sensitive to waterlogging, so good drainage is crucial.  Regular fertilization, particularly nitrogen, is essential for maximizing yield.  Irrigation may be necessary in drier periods, especially in regions with unpredictable rainfall.  Proper pest and disease management is also critical for healthy sugarcane growth.",
         "favorite": true
+    },
+    {
+        "name": "apple",
+        "N_min": 80,
+        "N_max": 120,
+        "P_min": 20,
+        "P_max": 30,
+        "K_min": 60,
+        "K_max": 80,
+        "ph_min": 6.0,
+        "ph_max": 7.0,
+        "temp_min": 15.0,
+        "temp_max": 25.0,
+        "moist_min": 20.0,
+        "moist_max": 35.0,
+        "analysis": "Apple trees thrive in well\u2011drained loamy soils with a pH of 6.0\u20137.0. Adequate nitrogen (80\u2013120\u202fkg\u202f/ha) supports vigorous vegetative growth, while moderate phosphorus (20\u201330\u202fkg\u202f/ha) and potassium (60\u201380\u202fkg\u202f/ha) levels promote root development and fruit quality. Maintain soil moisture at 20\u201335\u202f% of field capacity to avoid waterlogging, which can cause root rot. The optimal growing\u2011season temperature range is 15\u201325\u202f\u00b0C; however, apples require a period of cold dormancy (0\u20137\u202f\u00b0C) to break bud dormancy and ensure proper fruit set. Regular monitoring of soil pH, nutrient status, and moisture, combined with proper pruning, irrigation, and pest management, will help achieve high yields and quality fruit.",
+        "favorite": false
     }
 ]

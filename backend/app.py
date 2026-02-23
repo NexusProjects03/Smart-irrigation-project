@@ -23,7 +23,7 @@ CORS(app)
 
 # ================= AI CONFIG =================
 AI_API_KEY = os.getenv("AI_API_KEY")
-AI_MODEL = "google/gemma-3n-e2b-it:free"  # Using user's requested model
+AI_MODEL = "openai/gpt-oss-20b:free"  # Using user's requested model
 AI_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # ================= RESEND EMAIL CONFIG =================
@@ -217,7 +217,8 @@ Return ONLY a valid JSON object (no markdown, no code blocks). Structure:
 Use realistic agricultural data for {crop_name}."""
 
     try:
-        response = requests.post(
+        # Step 1: Request with reasoning enabled
+        response1 = requests.post(
             AI_URL,
             headers={
                 "Authorization": f"Bearer {AI_API_KEY}",
@@ -229,18 +230,54 @@ Use realistic agricultural data for {crop_name}."""
                 "model": AI_MODEL,
                 "messages": [
                     {"role": "user", "content": prompt}
-                ]
+                ],
+                "reasoning": {"enabled": True},
+                "provider": {"data_collection": "allow"}
             },
-            timeout=30
+            timeout=40
         )
         
-        if response.status_code != 200:
-            print("AI Error Status:", response.status_code)
-            print("AI Error Response:", response.text[:500])
+        if response1.status_code != 200:
+            print("AI Error Status 1:", response1.status_code)
+            print("AI Error Response 1:", response1.text[:500])
             return None
 
-        # Clean the response to ensure it's pure JSON
-        response_json = response.json()
+        response1_data = response1.json()
+        assistant_message = response1_data['choices'][0]['message']
+
+        # Step 2: Pass reasoning details back to model for final output
+        messages = [
+            {"role": "user", "content": prompt},
+            {
+                "role": "assistant",
+                "content": assistant_message.get('content', ''),
+                "reasoning_details": assistant_message.get('reasoning_details')
+            },
+            {"role": "user", "content": "Return the final formatted JSON exactly as requested without any markdown or conversational text."}
+        ]
+
+        response2 = requests.post(
+            AI_URL,
+            headers={
+                "Authorization": f"Bearer {AI_API_KEY}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "http://localhost:5000", 
+                "X-Title": "Smart Agriculture MVP"
+            },
+            json={
+                "model": AI_MODEL,
+                "messages": messages,
+                "reasoning": {"enabled": True},
+                "provider": {"data_collection": "allow"}
+            },
+            timeout=40
+        )
+
+        if response2.status_code != 200:
+            print("AI Error Status 2:", response2.status_code)
+            return None
+            
+        response_json = response2.json()
         print("AI Raw Response:", response_json)
         
         content = response_json['choices'][0]['message']['content']
@@ -475,18 +512,48 @@ def get_ai_more_crops(sensor_data, existing_crops, count):
     """
     
     try:
-        response = requests.post(
+        # Step 1
+        response1 = requests.post(
             AI_URL,
             headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
             json={
                 "model": AI_MODEL,
-                "messages": [{"role": "user", "content": prompt}]
+                "messages": [{"role": "user", "content": prompt}],
+                "reasoning": {"enabled": True},
+                "provider": {"data_collection": "allow"}
             },
-            timeout=20
+            timeout=30
         )
         
-        if response.status_code == 200:
-            content = response.json()['choices'][0]['message']['content']
+        if response1.status_code == 200:
+            resp1_data = response1.json()
+            assistant_msg = resp1_data['choices'][0]['message']
+            
+            # Step 2
+            messages = [
+                {"role": "user", "content": prompt},
+                {
+                    "role": "assistant",
+                    "content": assistant_msg.get('content', ''),
+                    "reasoning_details": assistant_msg.get('reasoning_details')
+                },
+                {"role": "user", "content": "Return the final formatted JSON array exactly as requested without any markdown."}
+            ]
+            
+            response2 = requests.post(
+                AI_URL,
+                headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
+                json={
+                    "model": AI_MODEL,
+                    "messages": messages,
+                    "reasoning": {"enabled": True},
+                    "provider": {"data_collection": "allow"}
+                },
+                timeout=30
+            )
+
+            if response2.status_code == 200:
+                content = response2.json()['choices'][0]['message']['content']
             # Clean markdown
             content = content.replace("```json", "").replace("```", "").strip()
             data = json.loads(content)
@@ -519,14 +586,15 @@ def predict():
         return jsonify({"error": "Sensor readings are all zero. Connect sensors or switch mode."})
 
     # 1. ML Prediction (Relaxed Logic to fill list)
-    features = [[
+    import pandas as pd
+    features = pd.DataFrame([[
         data["N"],
         data["P"],
         data["K"],
         data["temperature"],
         data["soil_moisture"],
         data["ph"]
-    ]]
+    ]], columns=["N", "P", "K", "temperature", "soil_moisture", "ph"])
 
     probs = model.predict_proba(features)[0]
     classes = model.classes_
@@ -608,23 +676,42 @@ def predict():
             final_list.append(ml_item)
             existing_names.add(ml_item["crop"].lower())
             
-    # 5. AI FALLBACK: If still < 25, ask AI for more
+    # 5. AI FALLBACK: If still < 25, ask AI for more (with retry)
     if len(final_list) < 25:
         missing_count = 25 - len(final_list)
         print(f"List has {len(final_list)} items. Asking AI for {missing_count} more...")
         
-        try:
-            ai_suggestions = get_ai_more_crops(data, list(existing_names), missing_count)
-            final_list.extend(ai_suggestions)
-        except Exception as e:
-            print(f"AI Fallback Failed: {e}")
+        max_retries = 2
+        for attempt in range(max_retries):
+            try:
+                ai_suggestions = get_ai_more_crops(data, list(existing_names), missing_count)
+                # Ensure each suggestion has required keys
+                for item in ai_suggestions:
+                    if "confidence" not in item:
+                        item["confidence"] = 50  # Default confidence for AI suggestions
+                    if "type" not in item:
+                        item["type"] = "AI Suggestion"
+                    if "crop" not in item:
+                        continue
+                    if item["crop"].lower() not in existing_names:
+                        final_list.append(item)
+                        existing_names.add(item["crop"].lower())
+                
+                # Check if we have enough now
+                if len(final_list) >= 25:
+                    break
+                else:
+                    missing_count = 25 - len(final_list)
+                    print(f"Retry {attempt+1}: Still need {missing_count} more crops...")
+            except Exception as e:
+                print(f"AI Fallback Failed (attempt {attempt+1}): {e}")
     
     # Take top 25 selected items (based on priority inclusion)
     selected_list = final_list[:25]
     
     # Returns 25 items. Now resort them STRICTLY by confidence for display
     # This satisfies "tile arrangement in descending order of confidence"
-    selected_list.sort(key=lambda x: x["confidence"], reverse=True)
+    selected_list.sort(key=lambda x: x.get("confidence", 0), reverse=True)
     
     top_list = selected_list
 
