@@ -494,66 +494,34 @@ def toggle_fav():
     return jsonify({"error": f"Crop '{crop_name}' not found"}), 404
 
 def get_ai_more_crops(sensor_data, existing_crops, count):
-    """Ask AI for additional crops to fill the list"""
-    prompt = f"""
-    You are an expert agronomist.
-    Current Soil Conditions:
-    N={sensor_data.get('N')}, P={sensor_data.get('P')}, K={sensor_data.get('K')}
-    pH={sensor_data.get('ph')}, Temp={sensor_data.get('temperature')}°C, Moisture={sensor_data.get('soil_moisture')}%
-    
-    Already recommended crops: {', '.join(existing_crops[:10])}... (total {len(existing_crops)})
-    
-    Task: Suggest {count} NEW, UNIQUE crops that are suitable for these conditions and NOT in the list above.
-    
-    Return ONLY a JSON array of objects. No markdown. Format:
-    [
-        {{ "crop": "Crop Name", "confidence": <estimated_suitability_0_to_100>, "type": "AI Suggestion" }}
-    ]
-    """
+    """Ask AI for additional crops to fill the list — single fast call, no reasoning needed"""
+    prompt = f"""You are an expert agronomist. Based on these soil conditions:
+N={sensor_data.get('N')} mg/kg, P={sensor_data.get('P')} mg/kg, K={sensor_data.get('K')} mg/kg
+pH={sensor_data.get('ph')}, Temperature={sensor_data.get('temperature')}°C, Moisture={sensor_data.get('soil_moisture')}%
+
+Already listed: {', '.join(existing_crops[:15])}
+
+Suggest exactly {count} MORE crops suitable for these conditions. Do NOT repeat any listed above.
+Return ONLY a JSON array, no markdown, no explanation:
+[{{"crop":"CropName","confidence":75,"type":"AI Suggestion"}}]"""
     
     try:
-        # Step 1
-        response1 = requests.post(
+        response = requests.post(
             AI_URL,
-            headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
+            headers={
+                "Authorization": f"Bearer {AI_API_KEY}",
+                "Content-Type": "application/json"
+            },
             json={
                 "model": AI_MODEL,
                 "messages": [{"role": "user", "content": prompt}],
-                "reasoning": {"enabled": True},
                 "provider": {"data_collection": "allow"}
             },
-            timeout=30
+            timeout=45
         )
         
-        if response1.status_code == 200:
-            resp1_data = response1.json()
-            assistant_msg = resp1_data['choices'][0]['message']
-            
-            # Step 2
-            messages = [
-                {"role": "user", "content": prompt},
-                {
-                    "role": "assistant",
-                    "content": assistant_msg.get('content', ''),
-                    "reasoning_details": assistant_msg.get('reasoning_details')
-                },
-                {"role": "user", "content": "Return the final formatted JSON array exactly as requested without any markdown."}
-            ]
-            
-            response2 = requests.post(
-                AI_URL,
-                headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
-                json={
-                    "model": AI_MODEL,
-                    "messages": messages,
-                    "reasoning": {"enabled": True},
-                    "provider": {"data_collection": "allow"}
-                },
-                timeout=30
-            )
-
-            if response2.status_code == 200:
-                content = response2.json()['choices'][0]['message']['content']
+        if response.status_code == 200:
+            content = response.json()['choices'][0]['message']['content']
             # Clean markdown
             content = content.replace("```json", "").replace("```", "").strip()
             data = json.loads(content)
@@ -561,6 +529,8 @@ def get_ai_more_crops(sensor_data, existing_crops, count):
             for item in data:
                 item["type"] = "AI Suggestion"
             return data
+        else:
+            print(f"AI More Crops Error: {response.status_code} - {response.text[:200]}")
     except Exception as e:
         print(f"AI Fetch Error: {e}")
     
