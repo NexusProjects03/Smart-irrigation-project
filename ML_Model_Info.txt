@@ -1,0 +1,225 @@
+================================================================================
+                    ML MODEL & AI INTEGRATION — DETAILED ANALYSIS
+                          Smart Agriculture NPK System
+================================================================================
+
+Generated: 23 February 2026
+Project: Smart Agriculture NPK Web Dashboard
+Location: backend/ml_model.pkl
+
+================================================================================
+1. ML MODEL OVERVIEW
+================================================================================
+
+Model Type       : Random Forest Classifier (Ensemble Learning)
+Library          : scikit-learn (sklearn.ensemble.RandomForestClassifier)
+Training Script  : backend/train_model.py
+Saved Model File : backend/ml_model.pkl (serialized with Python pickle)
+
+Hyperparameters:
+  - n_estimators : 200 (number of decision trees in the forest)
+  - max_depth    : None (trees grow until all leaves are pure or min_samples)
+  - random_state : 42 (ensures reproducible results)
+  - criterion    : gini (default — Gini Impurity for split quality)
+  - min_samples_split : 2 (default)
+  - min_samples_leaf  : 1 (default)
+  - bootstrap         : True (default — samples drawn with replacement)
+
+Train/Test Split:
+  - Test Size    : 20% (0.2)
+  - Random State : 42
+  - Stratified   : No (default)
+
+Expected Accuracy: ~97-99%
+  (Random Forest with 200 trees on a clean, balanced, 2000-sample agricultural
+   dataset typically achieves very high accuracy due to well-separated feature
+   distributions across crop types.)
+
+================================================================================
+2. DATASET INFORMATION
+================================================================================
+
+Dataset File     : backend/Crop_dataset.csv
+Total Samples    : 2,000
+Total Features   : 6 (input) + 1 (target label)
+
+Features (Input Variables):
+  ┌──────────────────┬───────────┬──────────────────────────────────────┐
+  │ Feature          │ Unit      │ Description                          │
+  ├──────────────────┼───────────┼──────────────────────────────────────┤
+  │ N                │ mg/kg     │ Nitrogen content in soil             │
+  │ P                │ mg/kg     │ Phosphorus content in soil           │
+  │ K                │ mg/kg     │ Potassium content in soil            │
+  │ temperature      │ °C        │ Ambient/soil temperature             │
+  │ soil_moisture    │ %         │ Soil moisture percentage             │
+  │ ph               │ pH scale  │ Soil pH level (acidity/alkalinity)   │
+  └──────────────────┴───────────┴──────────────────────────────────────┘
+
+Target Variable  : crop (categorical — name of the recommended crop)
+
+Crop Classes (5 classes, 400 samples each — perfectly balanced):
+  1. Rice         (400 samples)  — Rows 2 to 401
+  2. Wheat        (400 samples)  — Rows 402 to 801
+  3. Maize        (400 samples)  — Rows 802 to 1201
+  4. Cotton       (400 samples)  — Rows 1202 to 1601
+  5. Sugarcane    (400 samples)  — Rows 1602 to 2001
+
+================================================================================
+3. HOW THE RANDOM FOREST ALGORITHM WORKS
+================================================================================
+
+Random Forest is an ensemble machine learning method that operates by
+constructing multiple decision trees during training and outputting the
+class that is the mode (majority vote) of the classes predicted by
+individual trees.
+
+Step-by-Step Process:
+  1. BOOTSTRAP SAMPLING: For each of the 200 trees, a random subset of the
+     2,000 training samples is drawn WITH replacement (bagging).
+
+  2. TREE CONSTRUCTION: Each tree is built by recursively splitting nodes
+     using the best feature and threshold. At each node, only a random
+     subset of features (sqrt(6) ≈ 2-3 features) is considered for splitting.
+
+  3. SPLIT CRITERION (Gini Impurity):
+     Gini(t) = 1 - Σ [p(i|t)]²
+     Where p(i|t) is the proportion of class i samples at node t.
+     A Gini of 0 means a pure node (all samples belong to one class).
+
+  4. PREDICTION: For a new input, each of the 200 trees independently
+     predicts a crop class. The final prediction is determined by
+     majority voting across all trees.
+
+  5. PROBABILITY ESTIMATION:
+     P(class_k) = (Number of trees voting for class_k) / 200
+     This probability is used as the "confidence" percentage in the app.
+
+Key Formulas:
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │ Gini Impurity:   G(t) = 1 - Σᵢ [p(i|t)]²                        │
+  │ Information Gain: ΔG = G(parent) - Σ (wⱼ × G(childⱼ))            │
+  │ Confidence:       conf = (votes_for_class / total_trees) × 100    │
+  │ Accuracy:         acc = correct_predictions / total_predictions    │
+  │ Feature Importance: mean decrease in Gini across all tree splits  │
+  └─────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+4. PREDICTION PIPELINE IN THE APPLICATION
+================================================================================
+
+When a user clicks "Check Suitable Crops", the following pipeline executes:
+
+  ┌─────────────┐     ┌──────────────┐     ┌────────────────┐
+  │ Sensor Data │ ──> │ ML Model     │ ──> │ Ranked Crops   │
+  │ (N,P,K,     │     │ predict_     │     │ (up to 25)     │
+  │  temp,moist, │    │ proba()      │     │                │
+  │  pH)        │     └──────────────┘     └────────────────┘
+  └─────────────┘             │
+                              ▼
+                    ┌──────────────────┐
+                    │ Priority Merge:  │
+                    │ 1. Favorites ❤️  │
+                    │ 2. User Crops 🌿 │
+                    │ 3. ML Model 🤖  │
+                    │ 4. AI Fallback 🧠│
+                    └──────────────────┘
+
+Prediction Priority System:
+  1. FAVORITES: User-favorited crops are evaluated against sensor data
+     using a rule-based scoring system (6 checks: N, P, K, temp, moist, pH).
+     Each check scores 1.0 (in range), 0.5 (within 20% margin), or 0 (out).
+     Final confidence = (score / 6) × 100%.
+
+  2. USER CROPS: Same rule-based scoring as favorites, but lower priority.
+
+  3. ML PREDICTIONS: The RandomForest model predicts probabilities for all
+     5 crop classes. All predictions are included regardless of confidence.
+
+  4. AI FALLBACK: If the total is still below 25 crops, the system asks
+     the integrated AI model (OpenAI GPT-oss-20b) for additional suggestions
+     to fill the remaining slots. Retry logic ensures reliability.
+
+User Crop Confidence Formula:
+  score = Σ check(sensor_value, crop_min, crop_max) for each of 6 params
+  confidence = (score / 6) × 100
+
+  Where check() returns:
+    1.0  if  min ≤ value ≤ max
+    0.5  if  (min - 20% margin) ≤ value ≤ (max + 20% margin)
+    0.0  otherwise
+
+================================================================================
+5. INTEGRATED AI MODEL
+================================================================================
+
+AI Provider      : OpenRouter (https://openrouter.ai)
+AI Model         : openai/gpt-oss-20b:free (OpenAI GPT-oss 20B parameters)
+API Endpoint     : https://openrouter.ai/api/v1/chat/completions
+Reasoning Mode   : Enabled (two-step reasoning API flow)
+
+AI is used for two purposes in this application:
+
+  A. CROP DATA SEARCH (AI Add Crop):
+     When a user searches for a new crop by name, the AI provides:
+     - Ideal N, P, K ranges (mg/kg)
+     - Ideal pH range
+     - Ideal temperature range (°C)
+     - Ideal moisture range (%)
+     - Detailed analysis and growing advice
+     The AI compares these ideal values against live sensor data
+     (if available) to provide specific recommendations.
+
+  B. PREDICTION FALLBACK (Fill to 25 Crops):
+     When the ML model + user crops total fewer than 25 recommendations,
+     the AI suggests additional suitable crops based on current soil
+     conditions to fill the list. Includes retry logic (up to 2 attempts).
+
+Two-Step Reasoning Flow:
+  Step 1: Send prompt with reasoning enabled → model reasons internally
+  Step 2: Pass reasoning_details back → request final formatted JSON output
+  This ensures reliable, structured JSON responses free of markdown artifacts.
+
+================================================================================
+6. SYSTEM ARCHITECTURE SUMMARY
+================================================================================
+
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │                    SMART AGRICULTURE SYSTEM                        │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │                                                                     │
+  │  HARDWARE LAYER                                                     │
+  │  ├── Arduino (NPK sensors, pH, temp, moisture via Serial/USB)      │
+  │  └── Firebase Realtime DB (Cloud Mode alternative)                  │
+  │                                                                     │
+  │  BACKEND (Flask + Python)                                           │
+  │  ├── ML Model: RandomForest (200 trees, 5 crops, 6 features)      │
+  │  ├── AI Integration: OpenAI GPT-oss-20b via OpenRouter             │
+  │  ├── Email Alerts: Resend API (moisture alerts + AI search logs)   │
+  │  └── REST API: /api/predict, /api/ai-add-crop, /api/crops, etc.   │
+  │                                                                     │
+  │  FRONTEND (HTML/CSS/JS)                                             │
+  │  ├── Real-time sensor dashboard (USB + Cloud modes)                │
+  │  ├── Crop recommendation tiles with confidence scores              │
+  │  ├── AI-powered crop search with analysis                          │
+  │  ├── Smart motor control with rain/weather integration             │
+  │  └── Compatibility checker with actionable suggestions             │
+  │                                                                     │
+  └─────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+7. FILES REFERENCE
+================================================================================
+
+  backend/train_model.py     — Trains the RandomForest model & saves .pkl
+  backend/ml_model.pkl       — Serialized trained model (pickle format)
+  backend/Crop_dataset.csv   — Training dataset (2000 samples, 5 crops)
+  backend/app.py             — Flask server with ML + AI integration
+  backend/.env               — API keys (OpenRouter, Resend, Firebase)
+  backend/crops.json         — User-added crop data (persistent storage)
+  frontend/index.html        — Dashboard UI
+  frontend/script.js         — Frontend logic (sensor polling, predictions)
+  frontend/style.css         — UI styling and themes
+
+================================================================================
+                              END OF DOCUMENT
+================================================================================
