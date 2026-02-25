@@ -23,7 +23,8 @@ CORS(app)
 
 # ================= AI CONFIG =================
 AI_API_KEY = os.getenv("AI_API_KEY")
-AI_MODEL = "openai/gpt-oss-20b:free"  # Using user's requested model
+AI_MODEL = "google/gemma-3n-e2b-it:free"       # For crop analysis (fastest: 0.40s latency)
+AI_MODEL_FAST = "openai/gpt-oss-120b:free"     # For crop suggestions (reasoning-enabled)
 AI_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # ================= RESEND EMAIL CONFIG =================
@@ -217,8 +218,7 @@ Return ONLY a valid JSON object (no markdown, no code blocks). Structure:
 Use realistic agricultural data for {crop_name}."""
 
     try:
-        # Step 1: Request with reasoning enabled
-        response1 = requests.post(
+        response = requests.post(
             AI_URL,
             headers={
                 "Authorization": f"Bearer {AI_API_KEY}",
@@ -231,53 +231,17 @@ Use realistic agricultural data for {crop_name}."""
                 "messages": [
                     {"role": "user", "content": prompt}
                 ],
-                "reasoning": {"enabled": True},
                 "provider": {"data_collection": "allow"}
             },
-            timeout=40
+            timeout=45
         )
         
-        if response1.status_code != 200:
-            print("AI Error Status 1:", response1.status_code)
-            print("AI Error Response 1:", response1.text[:500])
+        if response.status_code != 200:
+            print("AI Error Status:", response.status_code)
+            print("AI Error Response:", response.text[:500])
             return None
 
-        response1_data = response1.json()
-        assistant_message = response1_data['choices'][0]['message']
-
-        # Step 2: Pass reasoning details back to model for final output
-        messages = [
-            {"role": "user", "content": prompt},
-            {
-                "role": "assistant",
-                "content": assistant_message.get('content', ''),
-                "reasoning_details": assistant_message.get('reasoning_details')
-            },
-            {"role": "user", "content": "Return the final formatted JSON exactly as requested without any markdown or conversational text."}
-        ]
-
-        response2 = requests.post(
-            AI_URL,
-            headers={
-                "Authorization": f"Bearer {AI_API_KEY}",
-                "Content-Type": "application/json",
-                "HTTP-Referer": "http://localhost:5000", 
-                "X-Title": "Smart Agriculture MVP"
-            },
-            json={
-                "model": AI_MODEL,
-                "messages": messages,
-                "reasoning": {"enabled": True},
-                "provider": {"data_collection": "allow"}
-            },
-            timeout=40
-        )
-
-        if response2.status_code != 200:
-            print("AI Error Status 2:", response2.status_code)
-            return None
-            
-        response_json = response2.json()
+        response_json = response.json()
         print("AI Raw Response:", response_json)
         
         content = response_json['choices'][0]['message']['content']
@@ -286,12 +250,9 @@ Use realistic agricultural data for {crop_name}."""
         # More aggressive cleaning of markdown
         content = content.strip()
         if content.startswith("```"):
-            # Remove code block markers
             lines = content.split('\n')
-            # Remove first line if it's ```json or ```
             if lines[0].startswith("```"):
                 lines = lines[1:]
-            # Remove last line if it's ```
             if lines and lines[-1].strip() == "```":
                 lines = lines[:-1]
             content = '\n'.join(lines).strip()
@@ -494,7 +455,7 @@ def toggle_fav():
     return jsonify({"error": f"Crop '{crop_name}' not found"}), 404
 
 def get_ai_more_crops(sensor_data, existing_crops, count):
-    """Ask AI for additional crops to fill the list — single fast call, no reasoning needed"""
+    """Ask AI for additional crops using GPT-oss-120b with reasoning"""
     prompt = f"""You are an expert agronomist. Based on these soil conditions:
 N={sensor_data.get('N')} mg/kg, P={sensor_data.get('P')} mg/kg, K={sensor_data.get('K')} mg/kg
 pH={sensor_data.get('ph')}, Temperature={sensor_data.get('temperature')}°C, Moisture={sensor_data.get('soil_moisture')}%
@@ -506,31 +467,64 @@ Return ONLY a JSON array, no markdown, no explanation:
 [{{"crop":"CropName","confidence":75,"type":"AI Suggestion"}}]"""
     
     try:
-        response = requests.post(
+        # Step 1: Request with reasoning
+        response1 = requests.post(
             AI_URL,
             headers={
                 "Authorization": f"Bearer {AI_API_KEY}",
                 "Content-Type": "application/json"
             },
             json={
-                "model": AI_MODEL,
+                "model": AI_MODEL_FAST,
                 "messages": [{"role": "user", "content": prompt}],
+                "reasoning": {"enabled": True},
                 "provider": {"data_collection": "allow"}
             },
             timeout=45
         )
         
-        if response.status_code == 200:
-            content = response.json()['choices'][0]['message']['content']
-            # Clean markdown
+        if response1.status_code != 200:
+            print(f"AI Suggestions Step 1 Error: {response1.status_code} - {response1.text[:200]}")
+            return []
+        
+        resp1_data = response1.json()
+        assistant_msg = resp1_data['choices'][0]['message']
+        
+        # Step 2: Pass reasoning back for final JSON output
+        messages = [
+            {"role": "user", "content": prompt},
+            {
+                "role": "assistant",
+                "content": assistant_msg.get('content', ''),
+                "reasoning_details": assistant_msg.get('reasoning_details')
+            },
+            {"role": "user", "content": "Return the final JSON array exactly as requested. No markdown."}
+        ]
+        
+        response2 = requests.post(
+            AI_URL,
+            headers={
+                "Authorization": f"Bearer {AI_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": AI_MODEL_FAST,
+                "messages": messages,
+                "reasoning": {"enabled": True},
+                "provider": {"data_collection": "allow"}
+            },
+            timeout=45
+        )
+        
+        if response2.status_code == 200:
+            content = response2.json()['choices'][0]['message']['content']
             content = content.replace("```json", "").replace("```", "").strip()
             data = json.loads(content)
-            # Ensure type is set
             for item in data:
                 item["type"] = "AI Suggestion"
             return data
         else:
-            print(f"AI More Crops Error: {response.status_code} - {response.text[:200]}")
+            print(f"AI Suggestions Step 2 Error: {response2.status_code} - {response2.text[:200]}")
     except Exception as e:
         print(f"AI Fetch Error: {e}")
     

@@ -97,5 +97,21 @@
         "moist_max": 35.0,
         "analysis": "Apple trees thrive in well\u2011drained loamy soils with a pH of 6.0\u20137.0. Adequate nitrogen (80\u2013120\u202fkg\u202f/ha) supports vigorous vegetative growth, while moderate phosphorus (20\u201330\u202fkg\u202f/ha) and potassium (60\u201380\u202fkg\u202f/ha) levels promote root development and fruit quality. Maintain soil moisture at 20\u201335\u202f% of field capacity to avoid waterlogging, which can cause root rot. The optimal growing\u2011season temperature range is 15\u201325\u202f\u00b0C; however, apples require a period of cold dormancy (0\u20137\u202f\u00b0C) to break bud dormancy and ensure proper fruit set. Regular monitoring of soil pH, nutrient status, and moisture, combined with proper pruning, irrigation, and pest management, will help achieve high yields and quality fruit.",
         "favorite": false
+    },
+    {
+        "name": "tomato",
+        "N_min": 80,
+        "N_max": 240,
+        "P_min": 15,
+        "P_max": 60,
+        "K_min": 100,
+        "K_max": 300,
+        "ph_min": 5.5,
+        "ph_max": 6.5,
+        "temp_min": 10.0,
+        "temp_max": 30.0,
+        "moist_min": 60.0,
+        "moist_max": 80.0,
+        "analysis": "Tomatoes thrive in well-drained, loamy or sandy loam soils rich in organic matter. A pH between 5.5 and 6.5 is optimal. They require consistent moisture, especially during fruit development. Temperatures between 18-30\u00b0C are ideal.  Avoid prolonged periods of drought and excessive humidity.  Full sun (6-8 hours daily) is essential for good fruit production. Mulching helps retain moisture and suppress weeds.  Consider disease-resistant varieties."
     }
 ]
